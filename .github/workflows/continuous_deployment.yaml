@@ -2,8 +2,8 @@ name: Continuos Deployment
 
 on:
   push:
-    branches:
-      - main 
+    tags:
+      - "*.*.*"
 
 env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
