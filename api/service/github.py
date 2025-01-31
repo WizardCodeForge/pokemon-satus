@@ -7,7 +7,13 @@ MetricsDTO = Dict[str, Any]
 
 def get_basic_metrics(user: str) -> MetricsDTO:
     url = 'https://api.github.com/graphql'
-    header = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}"}
+    header = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN', '')}"}
+
+    if not header["Authorization"]:
+        print("❌ ERRO: GITHUB_TOKEN não encontrado!")
+        return {}
+
+    print(f"📡 Buscando métricas de {user}...")
 
     def query_for_year(user: str, from_date: str, to_date: str) -> str:
         return f"""
@@ -33,12 +39,6 @@ def get_basic_metrics(user: str) -> MetricsDTO:
         }}
         """
 
-    def add_metrics(metrics: MetricsDTO, data: MetricsDTO) -> None:
-        metrics["all_commits"] += data["totalCommitContributions"]
-        metrics["all_issues"] += data["totalIssueContributions"]
-        metrics["all_prs"] += data["totalPullRequestContributions"]
-        metrics["all_prs_review"] += data["totalPullRequestReviewContributions"]
-
     metrics: MetricsDTO = {
         "all_repos": 0,
         "all_stars": 0,
@@ -58,18 +58,27 @@ def get_basic_metrics(user: str) -> MetricsDTO:
         to_date = f"{year}-12-31T23:59:59Z"
 
         query = query_for_year(user, from_date, to_date)
-        res = requests.post(url, json={'query': query}, headers=header)
-        res.raise_for_status()
-        data = res.json()
 
-        contributions = data["data"]["user"]["contributionsCollection"]
-        add_metrics(metrics, contributions)
+        try:
+            res = requests.post(url, json={'query': query}, headers=header)
+            res.raise_for_status()
+            data = res.json()
+            contributions = data["data"]["user"]["contributionsCollection"]
+            
+            metrics["all_commits"] += contributions["totalCommitContributions"]
+            metrics["all_issues"] += contributions["totalIssueContributions"]
+            metrics["all_prs"] += contributions["totalPullRequestContributions"]
+            metrics["all_prs_review"] += contributions["totalPullRequestReviewContributions"]
 
-        if year == start_year:
-            metrics["all_followers"] = data["data"]["user"]["followers"]["totalCount"]
-            for repos in data["data"]["user"]["repositories"]["nodes"]:
-                metrics["all_repos"] += 1
-                metrics["all_stars"] += repos["stargazerCount"]
-                metrics["all_forks"] += repos["forkCount"]
+            if year == start_year:
+                metrics["all_followers"] = data["data"]["user"]["followers"]["totalCount"]
+                for repos in data["data"]["user"]["repositories"]["nodes"]:
+                    metrics["all_repos"] += 1
+                    metrics["all_stars"] += repos["stargazerCount"]
+                    metrics["all_forks"] += repos["forkCount"]
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Erro ao buscar dados do GitHub: {e}")
+            return {}
 
     return metrics
