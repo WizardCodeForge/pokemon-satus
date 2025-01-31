@@ -1,7 +1,7 @@
 from api.module import get_xp_by_github, get_pokemon, get_svg_banner
 from flask import Flask, request, Response
 from dotenv import load_dotenv
-from cache import get_from_cache, save_to_cache
+from cache.cache import get_from_cache, save_to_cache
 
 load_dotenv("./infra/envs/.env")
 app = Flask(__name__)
