@@ -1,11 +1,13 @@
 import os
 from upstash_redis import Redis
 
-
 redis_url = os.getenv("KV_REST_API_URL")
-if not redis_url:
 
+if not redis_url:
     redis_url = "https://key-guinea-46924.upstash.io"
+
+redis_token = os.getenv("KV_REST_API_TOKEN")
+if not redis_token:
     redis_token = "AbdMAAIjcDE4NjlmNjMyNzdkMmU0MDVhYTY3NTUxODEwMjA1ZmNiNXAxMA"
 
 redis_client = Redis(url=redis_url, token=redis_token)
